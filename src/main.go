@@ -12,7 +12,7 @@ const types = "'gnu'"
 /*
 args[1] 编译器类型(gnu)
 args[2] 语言版本(
-	gun:c99,c11,cpp11,cpp14,cpp17,cpp20
+	gnu:c99,c11,cpp11,cpp14,cpp17,cpp20
 )
 args[3] 执行方式(compile,run,spjrun)
 args[4] 源文件、可执行文件路径，不包含后缀，例如/code/main，不需要/code/main.c
@@ -70,6 +70,7 @@ func main() {
 		})
 		return
 	}
+	mem *= 1024
 
 	switch args[1] {
 	case "gnu":
