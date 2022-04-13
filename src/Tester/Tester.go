@@ -2,6 +2,7 @@ package Tester
 
 import (
 	"TestMachine/src/LimitExec"
+	"bufio"
 	"bytes"
 	"encoding/json"
 
@@ -50,58 +51,67 @@ func (t *TestBuffer) GetByte() (byte, error) {
 	return t.buf[t.off-1], nil
 }
 
-func (t *TestBuffer) Check(p []byte) bool {
-	len_std := len(p)
-	//fmt.Println(string(p))
-	//fmt.Println(string(t.buf))
-	for len_std > 0 && (p[len_std-1] == 0 || p[len_std-1] == '\n' || p[len_std-1] == ' ') {
-		len_std--
-	}
-	off := 0
-	for off < len_std {
-		for off < len_std && p[off] == ' ' {
-			off++
-		}
-		for {
-			ch, err := t.Peek()
-			if err != nil || ch != ' ' {
-				break
-			}
-			t.Move()
-		}
-		if off == len_std {
-			break
-		}
-		if p[off] == '\n' {
-			ch, err := t.Peek()
-			if err == nil && ch == '\n' {
-				off++
-				t.Move()
+func (t *TestBuffer) Read(p []byte) (n int, err error) {
+	length := len(p)
+	for i := 0; i < length; i++ {
+		if t.off == t.len {
+			if i == 0 {
+				return 0, LimitExec.ExecError{Info: "EOF"}
 			} else {
-				return false
+				return i, nil
 			}
-		} else {
-			for off < len_std {
-				if p[off] == ' ' || p[off] == '\n' {
-					break
-				}
-				ch, err := t.Peek()
+		}
+		p[i] = t.buf[t.off]
+		t.off++
+	}
+	return length, nil
+}
 
-				//fmt.Println(ch)
-				//fmt.Println(p[off])
-				//fmt.Println(err)
+func ReadLine(p io.Reader) ([]byte, error) {
+	in1 := bufio.NewReader(p)
+	return in1.ReadBytes('\n')
+}
 
-				if err == nil && ch == p[off] {
-					off++
-					t.Move()
-				} else {
-					//fmt.Println("return false")
-					return false
-				}
-			}
+func CheckLine(p1, p2 []byte) bool {
+	len1 := len(p1) - 1
+	len2 := len(p2) - 1
+	for len1 >= 0 && (p1[len1] == 0 || p1[len1] == '\n' || p1[len1] == ' ') {
+		len1--
+	}
+	for len2 >= 0 && (p2[len2] == 0 || p2[len2] == '\n' || p2[len2] == ' ') {
+		len2--
+	}
+	if len1 != len2 {
+		return false
+	}
+	for i := 0; i <= len1; i++ {
+		if p1[i] != p2[i] {
+			return false
 		}
 	}
 	return true
+}
+
+func (t *TestBuffer) Check(p io.Reader) (bool, error) {
+
+	for {
+		out := false
+		p1, err := ReadLine(t)
+		if err != nil {
+			out = true
+		}
+		p2, err := ReadLine(p)
+		if err != nil {
+			out = true
+		}
+		if !CheckLine(p1, p2) {
+			return false, nil
+		}
+		if out {
+			break
+		}
+	}
+	return true, nil
 }
 
 func (t *TestBuffer) Write(p []byte) (n int, err error) {
@@ -191,7 +201,7 @@ func ReadFile(f io.Reader) *bytes.Buffer {
 		} else if err != nil {
 			return nil
 		} else {
-			resbuf.Write(buf)
+			resbuf.Write(buf[0:len])
 		}
 	}
 	return &resbuf
@@ -225,6 +235,7 @@ func RunBase(cmd, in, out string, timeLimit, memoryLimit int64) TestInfo {
 	stderr := bytes.Buffer{}
 
 	timeUse, memoryUse, err := LimitExec.LimitExec(timeLimit, memoryLimit, cmd, infile, &stdout, &stderr)
+
 	res := TestInfo{}
 	if err != nil {
 		if err.Error() == "MLE" {
@@ -245,7 +256,10 @@ func RunBase(cmd, in, out string, timeLimit, memoryLimit int64) TestInfo {
 			res.Info = "输出超限"
 			res.Statu = "015"
 		} else {
-			if stdout.Check(stdoutbuf.Bytes()) {
+			if ok, err := stdout.Check(stdoutbuf); err != nil {
+				res.Info = "评测机内部错误"
+				res.Statu = "017"
+			} else if ok {
 				res.Info = "运行通过"
 				res.Statu = "010"
 			} else {

@@ -26,7 +26,7 @@ func (e ExecError) Error() string {
 //返回 时间消耗（ms）内存消耗（KB） 错误信息
 func LimitExec(timeLimit, memoryLimit int64, args string, stdin io.Reader, stdout, stderr io.Writer) (time, memery int64, err error) {
 	//构造资源限制串，加入用户需要命令
-	var str = fmt.Sprintf("ulimit -t %d;ulimit -m %d;", (timeLimit+999)/1000, memoryLimit+32768) + args
+	var str = fmt.Sprintf("ulimit -t %d;ulimit -m %d;", (timeLimit+999)/1000, memoryLimit+32768) + "cd /test/workspace;" + args
 	//构造cmd
 	cmd := exec.Command("sh", "-c", str)
 	//重定向输入输出

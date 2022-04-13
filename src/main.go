@@ -16,8 +16,8 @@ args[2] 语言版本(
 )
 args[3] 执行方式(compile,run,spjrun)
 args[4] 源文件、可执行文件路径，不包含后缀，例如/code/main，不需要/code/main.c
-args[5] 执行时间限制
-args[6] 执行空间限制
+args[5] 执行时间限制 ms
+args[6] 执行空间限制 MB
 args[7] 测试数据路径，不包含后缀，默认后缀分别为.in和.out，如果是spj，允许.out文件不存在
 args[8] spj路径
 compile方式要求有7个参数
@@ -33,22 +33,34 @@ func main() {
 		})
 		return
 	} else {
-		if args[3] == "compile" && len(args) < 7 {
+		if args[3] == "compile" {
+			if len(args) < 7 {
+				show(Tester.TestInfo{
+					Statu: "004",
+					Info:  "调用参数过少，参数数量为 " + strconv.Itoa(len(args)) + " ,但是compile模式至少需要7个参数执行",
+				})
+				return
+			}
+		} else if args[3] == "run" {
+			if len(args) < 8 {
+				show(Tester.TestInfo{
+					Statu: "004",
+					Info:  "调用参数过少，参数数量为 " + strconv.Itoa(len(args)) + " ,但是run模式至少需要8个参数执行",
+				})
+				return
+			}
+		} else if args[3] == "spjrun" {
+			if len(args) < 9 {
+				show(Tester.TestInfo{
+					Statu: "004",
+					Info:  "调用参数过少，参数数量为 " + strconv.Itoa(len(args)) + " ,但是run模式至少需要9个参数执行",
+				})
+				return
+			}
+		} else {
 			show(Tester.TestInfo{
-				Statu: "004",
-				Info:  "调用参数过少，参数数量为 " + strconv.Itoa(len(args)) + " ,但是compile模式至少需要7个参数执行",
-			})
-			return
-		} else if args[3] == "run" && len(args) < 8 {
-			show(Tester.TestInfo{
-				Statu: "004",
-				Info:  "调用参数过少，参数数量为 " + strconv.Itoa(len(args)) + " ,但是run模式至少需要8个参数执行",
-			})
-			return
-		} else if args[3] == "spjrun" && len(args) < 9 {
-			show(Tester.TestInfo{
-				Statu: "004",
-				Info:  "调用参数过少，参数数量为 " + strconv.Itoa(len(args)) + " ,但是run模式至少需要9个参数执行",
+				Statu: "024",
+				Info:  "参数3错误，应为:compile或run或spjrun，但是输入了：" + args[3],
 			})
 			return
 		}
@@ -71,7 +83,6 @@ func main() {
 		return
 	}
 	mem *= 1024
-
 	switch args[1] {
 	case "gnu":
 		tester = Tester.NewGUNTester(args[2], args[4], time, mem)
