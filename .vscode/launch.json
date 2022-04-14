@@ -13,11 +13,10 @@
             "args": [
                 "gnu",
                 "cpp11",
-                "run",
-                "/code/TMManager/workspace/test/workspace/main",
-                "1000",
+                "compile",
+                "/code/TestMachine/test/workspace/main",
+                "10000",
                 "256",
-                "/code/TMManager/data/problems/1/cases/2"
             ]
         }
     ]

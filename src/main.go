@@ -78,7 +78,7 @@ func main() {
 	if err != nil {
 		show(Tester.TestInfo{
 			Statu: "002",
-			Info:  "执行时间限制错误，输入为 " + args[6] + " ,但是期望的值为一个64位整数，单位KB。错误信息：" + err.Error(),
+			Info:  "执行时间限制错误，输入为 " + args[6] + " ,但是期望的值为一个64位整数，单位MB。错误信息：" + err.Error(),
 		})
 		return
 	}
