@@ -75,10 +75,10 @@ func ReadLine(p io.Reader) ([]byte, error) {
 func CheckLine(p1, p2 []byte) bool {
 	len1 := len(p1) - 1
 	len2 := len(p2) - 1
-	for len1 >= 0 && (p1[len1] == 0 || p1[len1] == '\n' || p1[len1] == ' ') {
+	for len1 >= 0 && (p1[len1] == 0 || p1[len1] == '\n' || p1[len1] == '\r' || p1[len1] == ' ') {
 		len1--
 	}
-	for len2 >= 0 && (p2[len2] == 0 || p2[len2] == '\n' || p2[len2] == ' ') {
+	for len2 >= 0 && (p2[len2] == 0 || p2[len2] == '\n' || p2[len2] == '\r' || p2[len2] == ' ') {
 		len2--
 	}
 	if len1 != len2 {
