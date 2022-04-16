@@ -1,7 +1,7 @@
 package main
 
 import (
-	"TestMachine/src/Tester"
+	Tester "CUGOj-Judger/src/Tester"
 	"fmt"
 	"os"
 	"strconv"
@@ -57,6 +57,14 @@ func main() {
 				})
 				return
 			}
+		} else if args[3] == "intrun" {
+			if len(args) < 9 {
+				show(Tester.TestInfo{
+					Statu: "004",
+					Info:  "调用参数过少，参数数量为 " + strconv.Itoa(len(args)) + " ,但是run模式至少需要9个参数执行",
+				})
+				return
+			}
 		} else {
 			show(Tester.TestInfo{
 				Statu: "024",
@@ -85,7 +93,7 @@ func main() {
 	mem *= 1024
 	switch args[1] {
 	case "gnu":
-		tester = Tester.NewGUNTester(args[2], args[4], time, mem)
+		tester = Tester.NewGNUTester(args[2], args[4], time, mem)
 	default:
 		show(Tester.TestInfo{
 			Statu: "008",
@@ -97,6 +105,10 @@ func main() {
 		show(tester.Compile())
 	} else if args[3] == "run" {
 		show(tester.Run(args[7]+".in", args[7]+".out"))
+	} else if args[3] == "spjrun" {
+		show(tester.Spj(args[7]+".in", args[7]+".out", args[8]))
+	} else if args[3] == "intrun" {
+		show(tester.Int(args[7]+".in", args[7]+".out", args[8]))
 	}
 
 }

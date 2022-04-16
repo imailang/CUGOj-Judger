@@ -1,4 +1,4 @@
-package LimitExec
+package limitexec
 
 import (
 	"bytes"
@@ -106,4 +106,96 @@ func LimitExecOE(timeLimit, memoryLimit int64, args string, stdout, stderr *byte
 //不处理输入输出的LimitExec None
 func LimitExecN(timeLimit, memoryLimit int64, args string) (time, memery int64, err error) {
 	return LimitExec(timeLimit, memoryLimit, args, nil, nil, nil)
+}
+
+//以限制时间，限制内存的方式执行两个交互式的命令
+//timeLimit：时间限制 ms
+//memoryLimit：空间限制 KB
+//args：命令
+//stdin：标准输入
+//stdout：标准输出
+//stderr：标准错误
+//返回 时间消耗（ms）内存消耗（KB） 错误信息
+func IntExec(timeLimit, memoryLimit int64, args, spj, spjargs string) (time, memery int64, err error) {
+	//构造资源限制串，加入用户需要命令
+	var str = fmt.Sprintf("ulimit -t %d;ulimit -m %d;", (timeLimit+999)/1000, memoryLimit+32768) + "cd /test/workspace;" + args
+	//构造cmd
+	cmd := exec.Command("sh", "-c", str)
+	//重定向输入输出
+
+	spjcmd := exec.Command(spj, spjargs)
+
+	buf1 := bytes.Buffer{}
+	buf2 := bytes.Buffer{}
+
+	cmd.Stdout = &buf1
+	spjcmd.Stdin = &buf1
+
+	cmd.Stdin = &buf2
+	spjcmd.Stdout = &buf2
+
+	spjcmd.Stderr = &bytes.Buffer{}
+
+	//运行cmd并获取其rusage
+	err = cmd.Start()
+
+	spjcmd.Run()
+
+	ac := true
+
+	if ch, err := spjcmd.Stderr.(*bytes.Buffer).ReadByte(); err != nil || ch == 'w' || ch == 'W' {
+		if cmd.Process != nil {
+			cmd.Process.Kill()
+		}
+		ac = false
+	}
+	cmd.Wait()
+
+	statu := (*cmd).ProcessState
+	rusage := (*statu).SysUsage().(*syscall.Rusage)
+
+	//计算使用时间和内存
+	timeUse := (rusage.Utime.Sec+rusage.Stime.Sec)*1000 + (rusage.Utime.Usec+rusage.Stime.Usec)/1000
+	memoryUse := rusage.Maxrss
+
+	if timeUse > timeLimit {
+		timeUse = timeLimit
+	}
+	if memoryUse > memoryLimit {
+		memoryUse = memoryLimit
+	}
+
+	if !ac {
+		return timeUse, memoryUse, ExecError{
+			Info: "WA",
+		}
+	}
+
+	if timeUse >= timeLimit {
+		return timeUse, memoryUse, ExecError{
+			Info: "TLE",
+		}
+	}
+	if memoryUse >= memoryLimit {
+		return timeUse, memoryUse, ExecError{
+			Info: "MLE",
+		}
+	}
+	if err != nil {
+		if err.Error() == "exit status 137" {
+			timeUse = timeLimit
+			return timeUse, memoryUse, ExecError{
+				Info: "TLE",
+			}
+		} else if err.Error() == "exit status 141" {
+			return timeUse, memoryUse, ExecError{
+				Info: "OLE",
+			}
+		} else {
+			return timeUse, memoryUse, ExecError{
+				Info: "RE",
+			}
+		}
+	}
+	return timeUse, memoryUse, nil
 }

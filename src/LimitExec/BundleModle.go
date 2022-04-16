@@ -1,4 +1,4 @@
-package LimitExec
+package limitexec
 
 type BundleConfig struct {
 	OciVersion string   `json:"ociVersion"`

@@ -1,6 +1,6 @@
-package Tester
+package tester
 
-//GUN编译文件
+//GNU编译文件
 
 const (
 	c99   = "-std=c99"
@@ -12,7 +12,7 @@ const (
 )
 const versions = "'c99','c11','cpp11','cpp14','cpp17','cpp20'"
 
-type GUNTester struct {
+type GNUTester struct {
 	version     string
 	path        string
 	out         string
@@ -20,8 +20,8 @@ type GUNTester struct {
 	memoryLimit int64
 }
 
-func NewGUNTester(version, path string, timeLimit, memoryLimit int64) GUNTester {
-	var tmp GUNTester
+func NewGNUTester(version, path string, timeLimit, memoryLimit int64) GNUTester {
+	var tmp GNUTester
 	tmp.version = version
 
 	if version == "c99" || version == "c11" {
@@ -36,7 +36,7 @@ func NewGUNTester(version, path string, timeLimit, memoryLimit int64) GUNTester 
 	return tmp
 }
 
-func (tester GUNTester) Compile() TestInfo {
+func (tester GNUTester) Compile() TestInfo {
 	var cmd string
 	var std string
 	switch tester.version {
@@ -70,10 +70,14 @@ func (tester GUNTester) Compile() TestInfo {
 	return CompileBase(cmdArgs, tester.timeLimit, tester.memoryLimit)
 }
 
-func (tester GUNTester) Run(in, out string) TestInfo {
+func (tester GNUTester) Run(in, out string) TestInfo {
 	return RunBase(tester.out, in, out, tester.timeLimit, tester.memoryLimit)
 }
 
-func (tester GUNTester) Spj(in, out, spj string) TestInfo {
-	return TestInfo{}
+func (tester GNUTester) Spj(in, out, spj string) TestInfo {
+	return SpjRunBase(tester.out, in, out, spj, tester.timeLimit, tester.memoryLimit)
+}
+
+func (tester GNUTester) Int(in, out, spj string) TestInfo {
+	return IntRunBase(tester.out, in, out, spj, tester.timeLimit, tester.memoryLimit)
 }

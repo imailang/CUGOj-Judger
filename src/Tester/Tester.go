@@ -1,10 +1,11 @@
-package Tester
+package tester
 
 import (
-	"TestMachine/src/LimitExec"
+	LimitExec "CUGOj-Judger/src/LimitExec"
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"os/exec"
 
 	//"fmt"
 	"io"
@@ -97,11 +98,11 @@ func (t *TestBuffer) Check(p io.Reader) (bool, error) {
 	for {
 		out := false
 		p1, err := ReadLine(t)
-		if err != nil {
+		if err != nil || len(p1) == 0 {
 			out = true
 		}
 		p2, err := ReadLine(p)
-		if err != nil {
+		if err != nil || len(p2) == 0 {
 			out = true
 		}
 		if !CheckLine(p1, p2) {
@@ -160,6 +161,7 @@ type Tester interface {
 	Compile() TestInfo
 	Run(in, out string) TestInfo
 	Spj(in, out, spj string) TestInfo
+	Int(in, out, spj string) TestInfo
 }
 
 //
@@ -271,4 +273,119 @@ func RunBase(cmd, in, out string, timeLimit, memoryLimit int64) TestInfo {
 	res.RunTime = timeUse
 	res.Memory = memoryUse
 	return res
+}
+
+func SpjRunBase(cmd, in, out, spj string, timeLimit, memoryLimit int64) TestInfo {
+	infile, err := os.OpenFile(in, os.O_RDONLY, 0444)
+	if err != nil {
+		return TestInfo{
+			Statu: "009",
+			Info:  "测试输入用例不存在：" + in,
+		}
+	}
+
+	outfile, err := os.OpenFile(out, os.O_RDONLY, 0444)
+	if err != nil {
+		return TestInfo{
+			Statu: "009",
+			Info:  "测试输出用例不存在：" + out,
+		}
+	}
+	outfile.Close()
+
+	stderr := bytes.Buffer{}
+
+	stdout := NewTestBuffer(512 * 1024 * 1024)
+
+	timeUse, memoryUse, err := LimitExec.LimitExec(timeLimit, memoryLimit, cmd, infile, &stdout, &stderr)
+
+	res := TestInfo{}
+	if err != nil {
+		if err.Error() == "MLE" {
+			res.Info = "内存超限"
+			res.Statu = "013"
+		} else if err.Error() == "TLE" {
+			res.Info = "运行超时"
+			res.Statu = "011"
+		} else if err.Error() == "OLE" {
+			res.Info = "输出超限"
+			res.Statu = "015"
+		} else {
+			res.Statu = "012"
+			res.Info = "运行错误"
+		}
+	} else {
+		if stdout.out {
+			res.Info = "输出超限"
+			res.Statu = "015"
+		} else {
+			cmd := exec.Command(spj, in, out)
+			spjout := bytes.Buffer{}
+			cmd.Stdout = &spjout
+			cmd.Stdin = bytes.NewBuffer(stdout.buf)
+			if err := cmd.Run(); err != nil {
+				res.Info = "评测机内部错误"
+				res.Statu = "017"
+			} else if ch, err := spjout.ReadByte(); err == nil && (ch == 'a' || ch == 'A') {
+				res.Info = "运行通过"
+				res.Statu = "010"
+			} else {
+				res.Info = "程序运行结果错误"
+				res.Statu = "014"
+			}
+		}
+	}
+	res.RunTime = timeUse
+	res.Memory = memoryUse
+	return res
+
+}
+
+func IntRunBase(cmd, in, out, spj string, timeLimit, memoryLimit int64) TestInfo {
+	infile, err := os.OpenFile(in, os.O_RDONLY, 0444)
+	if err != nil {
+		return TestInfo{
+			Statu: "009",
+			Info:  "测试输入用例不存在：" + in,
+		}
+	}
+	infile.Close()
+
+	outfile, err := os.OpenFile(out, os.O_RDONLY, 0444)
+	if err != nil {
+		return TestInfo{
+			Statu: "009",
+			Info:  "测试输出用例不存在：" + out,
+		}
+	}
+	outfile.Close()
+
+	timeUse, memoryUse, err := LimitExec.IntExec(timeLimit, memoryLimit, cmd, spj, in+" "+out)
+
+	res := TestInfo{}
+	if err != nil {
+		if err.Error() == "MLE" {
+			res.Info = "内存超限"
+			res.Statu = "013"
+		} else if err.Error() == "TLE" {
+			res.Info = "运行超时"
+			res.Statu = "011"
+		} else if err.Error() == "OLE" {
+			res.Info = "输出超限"
+			res.Statu = "015"
+		} else if err.Error() == "WA" {
+			res.Info = "程序运行结果错误"
+			res.Statu = "014"
+		} else {
+			res.Statu = "012"
+			res.Info = "运行错误"
+		}
+	} else {
+		res.Info = "运行通过"
+		res.Statu = "010"
+	}
+	res.RunTime = timeUse
+	res.Memory = memoryUse
+	return res
+
 }

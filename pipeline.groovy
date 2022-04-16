@@ -19,7 +19,7 @@ pipeline {
         stage('拉取') {
             steps {
                 // Get some code from a GitHub repository
-                git branch: 'main', credentialsId: 'Github——imailang', url: 'https://github.com/imailang/TestMachine.git'
+                git branch: 'main', credentialsId: 'Github——imailang', url: 'https://github.com/imailang/CUGOj-Judger.git'
             }
         }
         stage('构建'){

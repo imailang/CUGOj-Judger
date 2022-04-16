@@ -1,13 +1,20 @@
 #include <stdio.h>
 #include <bits/stdc++.h>
+using namespace std;
 int func(int a, int b)
 {
-    return a + b;
+    return a + b - 1;
 }
 int main()
 {
-    int a, b;
-    scanf("%d%d", &a, &b);
-    printf("%d\n", func(a, b));
+    int t;
+    cin >> t;
+    while (t--)
+    {
+        int a, b;
+        cin >> a >> b;
+        cout << func(a, b) << endl;
+        cout.flush();
+    }
     return 0;
 }

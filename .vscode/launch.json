@@ -13,10 +13,12 @@
             "args": [
                 "gnu",
                 "cpp11",
-                "compile",
-                "/code/TestMachine/test/workspace/main",
+                "intrun",
+                "/code/CUGOj-Judger/test/workspace/main",
                 "10000",
                 "256",
+                "/code/CUGOj-Judger/test/test1",
+                "/code/CUGOj-Judger/test/workspace/spj",
             ]
         }
     ]
