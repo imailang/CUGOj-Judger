@@ -1,24 +1,24 @@
 #include <bits/stdc++.h>
 using namespace std;
-int main(int argc, char *argv[])
+int main()
 {
-    ifstream in(argv[1]), out(argv[2]);
     int t = 5;
     cout << t << endl;
+    cout.flush();
     while (t--)
     {
         int a, b;
-        a = rand(), b = rand();
+        a = rand() % 100000, b = rand() % 100000;
         cout << a << " " << b << endl;
         cout.flush();
         int ans;
         cin >> ans;
-        if (ans != a + b)
+        if (ans != (a + b))
         {
-            perror("wa");
+            fprintf(stderr, "wa");
             return 0;
         }
     }
-    perror("ac");
+    fprintf(stderr, "ac");
     return 0;
 }

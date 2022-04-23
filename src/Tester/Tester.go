@@ -1,6 +1,7 @@
 package tester
 
 import (
+	debughelper "CUGOj-Judger/src/DebugHelper"
 	LimitExec "CUGOj-Judger/src/LimitExec"
 	"bufio"
 	"bytes"
@@ -170,6 +171,8 @@ type Tester interface {
 //
 //
 func CompileBase(cmd string, timeLimit, memoryLimit int64) TestInfo {
+	debughelper.ShowInfo("调用CompileBase,cmd为:" + cmd)
+
 	stderr := bytes.Buffer{}
 	timeUse, memoryUse, err := LimitExec.LimitExecE(timeLimit, memoryLimit, cmd, &stderr)
 	var res TestInfo
@@ -210,6 +213,8 @@ func ReadFile(f io.Reader) *bytes.Buffer {
 }
 
 func RunBase(cmd, in, out string, timeLimit, memoryLimit int64) TestInfo {
+	debughelper.ShowInfo("调用RunBase,cmd为:" + cmd)
+
 	infile, err := os.OpenFile(in, os.O_RDONLY, 0444)
 	if err != nil {
 		return TestInfo{
@@ -276,6 +281,7 @@ func RunBase(cmd, in, out string, timeLimit, memoryLimit int64) TestInfo {
 }
 
 func SpjRunBase(cmd, in, out, spj string, timeLimit, memoryLimit int64) TestInfo {
+	debughelper.ShowInfo("调用SpjRunBase,cmd为:" + cmd)
 	infile, err := os.OpenFile(in, os.O_RDONLY, 0444)
 	if err != nil {
 		return TestInfo{
@@ -322,8 +328,19 @@ func SpjRunBase(cmd, in, out, spj string, timeLimit, memoryLimit int64) TestInfo
 			cmd := exec.Command(spj, in, out)
 			spjout := bytes.Buffer{}
 			cmd.Stdout = &spjout
+			cmd.Stderr = &bytes.Buffer{}
 			cmd.Stdin = bytes.NewBuffer(stdout.buf)
+
+			debughelper.ShowInfo("标准输出信息")
+			debughelper.ShowBuf(cmd.Stdout.(*bytes.Buffer).Bytes())
+
+			debughelper.ShowInfo("标准错误信息")
+			debughelper.ShowBuf(cmd.Stderr.(*bytes.Buffer).Bytes())
+
 			if err := cmd.Run(); err != nil {
+
+				debughelper.ShowError(err)
+
 				res.Info = "评测机内部错误"
 				res.Statu = "017"
 			} else if ch, err := spjout.ReadByte(); err == nil && (ch == 'a' || ch == 'A') {

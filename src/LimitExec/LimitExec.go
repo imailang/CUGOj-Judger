@@ -1,6 +1,7 @@
 package limitexec
 
 import (
+	debughelper "CUGOj-Judger/src/DebugHelper"
 	"bytes"
 	"fmt"
 	"io"
@@ -45,6 +46,18 @@ func LimitExec(timeLimit, memoryLimit int64, args string, stdin io.Reader, stdou
 	}
 	//运行cmd并获取其rusage
 	err = cmd.Run()
+
+	//debug
+	debughelper.ShowInfo("标准输出信息")
+	debughelper.ShowBuf(cmd.Stdout.(*bytes.Buffer).Bytes())
+
+	debughelper.ShowInfo("标准错误信息")
+	debughelper.ShowBuf(cmd.Stderr.(*bytes.Buffer).Bytes())
+
+	if err != nil {
+		debughelper.ShowError(err)
+	}
+
 	statu := (*cmd).ProcessState
 	rusage := (*statu).SysUsage().(*syscall.Rusage)
 
@@ -116,40 +129,44 @@ func LimitExecN(timeLimit, memoryLimit int64, args string) (time, memery int64, 
 //stdout：标准输出
 //stderr：标准错误
 //返回 时间消耗（ms）内存消耗（KB） 错误信息
-func IntExec(timeLimit, memoryLimit int64, args, spj, spjargs string) (time, memery int64, err error) {
+func IntExec(timeLimit, memoryLimit int64, args, spj, spjargs string) (int64, int64, error) {
 	//构造资源限制串，加入用户需要命令
 	var str = fmt.Sprintf("ulimit -t %d;ulimit -m %d;", (timeLimit+999)/1000, memoryLimit+32768) + "cd /test/workspace;" + args
+	var spjstr = fmt.Sprintf("ulimit -t %d;ulimit -m %d;", (timeLimit+999)/1000, memoryLimit+32768) + "cd /test/workspace;" + spj + " " + spjargs
+	debughelper.ShowInfo("main命令：" + str)
+	debughelper.ShowInfo("spj运行命令：" + spjstr)
 	//构造cmd
 	cmd := exec.Command("sh", "-c", str)
 	//重定向输入输出
 
-	spjcmd := exec.Command(spj, spjargs)
+	spjcmd := exec.Command("sh", "-c", spjstr)
 
-	buf1 := bytes.Buffer{}
-	buf2 := bytes.Buffer{}
+	// buf1 := bytes.Buffer{}
+	// buf2 := bytes.Buffer{}
 
-	cmd.Stdout = &buf1
-	spjcmd.Stdin = &buf1
+	// cmd.Stdout = &buf1
+	// spjcmd.Stdin = &buf1
 
-	cmd.Stdin = &buf2
-	spjcmd.Stdout = &buf2
+	// spjcmd.Stdout = &buf2
+	// cmd.Stdin = &buf2
+	/*
+	   go run src/main.go gnu cpp11 intrund /code/CUGOj-Judger/test/workspace/main 10000 256 /code/CUGOj-Judger/test/test1 /code/CUGOj-Judger/test/workspace/spj
+	*/
+
+	// spjcmd.Stdin, cmd.Stdout = os.Pipe()
+	// cmd.Stdin, spjcmd.Stdout = os.Pipe()
+
+	spjcmd.Stdin, _ = cmd.StdoutPipe()
+	cmd.Stdin, _ = spjcmd.StdoutPipe()
 
 	spjcmd.Stderr = &bytes.Buffer{}
+	cmd.Stderr = &bytes.Buffer{}
 
 	//运行cmd并获取其rusage
-	err = cmd.Start()
+	spjcmd.Start()
+	cmd.Start()
 
-	spjcmd.Run()
-
-	ac := true
-
-	if ch, err := spjcmd.Stderr.(*bytes.Buffer).ReadByte(); err != nil || ch == 'w' || ch == 'W' {
-		if cmd.Process != nil {
-			cmd.Process.Kill()
-		}
-		ac = false
-	}
-	cmd.Wait()
+	err := cmd.Wait()
 
 	statu := (*cmd).ProcessState
 	rusage := (*statu).SysUsage().(*syscall.Rusage)
@@ -165,12 +182,6 @@ func IntExec(timeLimit, memoryLimit int64, args, spj, spjargs string) (time, mem
 		memoryUse = memoryLimit
 	}
 
-	if !ac {
-		return timeUse, memoryUse, ExecError{
-			Info: "WA",
-		}
-	}
-
 	if timeUse >= timeLimit {
 		return timeUse, memoryUse, ExecError{
 			Info: "TLE",
@@ -182,6 +193,7 @@ func IntExec(timeLimit, memoryLimit int64, args, spj, spjargs string) (time, mem
 		}
 	}
 	if err != nil {
+		debughelper.ShowError(err)
 		if err.Error() == "exit status 137" {
 			timeUse = timeLimit
 			return timeUse, memoryUse, ExecError{
@@ -195,6 +207,69 @@ func IntExec(timeLimit, memoryLimit int64, args, spj, spjargs string) (time, mem
 			return timeUse, memoryUse, ExecError{
 				Info: "RE",
 			}
+		}
+	}
+
+	debughelper.ShowInfo("测试代码stderr输出")
+	debughelper.ShowBuf(cmd.Stderr.(*bytes.Buffer).Bytes())
+
+	err = spjcmd.Wait()
+	if err != nil {
+		debughelper.ShowError(err)
+		return timeUse, memoryUse, ExecError{
+			Info: "SE",
+		}
+	}
+
+	// errch := make(chan error, 2)
+
+	// goCnt := &sync.WaitGroup{}
+
+	// goCnt.Add(1)
+	// go func(cmd1, cmd2 *exec.Cmd, ch chan error) {
+	// 	cmdBuf, cmderr := cmd1.Output()
+	// 	cmd1.Wait()
+	// 	fmt.Println(cmdBuf)
+	// 	debughelper.ShowInfo("cmd运行结束")
+	// 	ch <- cmderr
+	// 	debughelper.ShowInfo("cmd返回结果")
+	// 	goCnt.Done()
+	// }(cmd, spjcmd, errch)
+
+	// ac := false
+
+	// goCnt.Add(1)
+	// go func(cmd1, cmd2 *exec.Cmd, ch chan error) {
+	// 	cmd1.Wait()
+	// 	debughelper.ShowInfo("spjcmd运行结束")
+	// 	goCnt.Done()
+	// 	if cha, err := spjcmd.Stderr.(*bytes.Buffer).ReadByte(); err != nil || cha == 'w' || cha == 'W' {
+	// 		ch <- ExecError{Info: "WA"}
+	// 	} else {
+	// 		ac = true
+	// 	}
+	// }(spjcmd, cmd, errch)
+
+	// err := <-errch
+
+	// debughelper.ShowInfo("交互题输出-测试代码输入")
+	// debughelper.ShowBuf(buf2.Bytes())
+
+	// debughelper.ShowInfo("交互题输入-测试代码输出")
+	// debughelper.ShowBuf(buf1.Bytes())
+
+	debughelper.ShowInfo("交互题stderr输出")
+	debughelper.ShowBuf(spjcmd.Stderr.(*bytes.Buffer).Bytes())
+
+	var ac bool
+	if cha, err := spjcmd.Stderr.(*bytes.Buffer).ReadByte(); err != nil || cha == 'w' || cha == 'W' {
+		ac = false
+	} else {
+		ac = true
+	}
+	if !ac {
+		return timeUse, memoryUse, ExecError{
+			Info: "WA",
 		}
 	}
 	return timeUse, memoryUse, nil

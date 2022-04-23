@@ -13,9 +13,9 @@
             "args": [
                 "gnu",
                 "cpp11",
-                "intrun",
+                "intrund",
                 "/code/CUGOj-Judger/test/workspace/main",
-                "10000",
+                "1000",
                 "256",
                 "/code/CUGOj-Judger/test/test1",
                 "/code/CUGOj-Judger/test/workspace/spj",

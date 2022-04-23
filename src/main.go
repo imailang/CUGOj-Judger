@@ -1,6 +1,7 @@
 package main
 
 import (
+	debughelper "CUGOj-Judger/src/DebugHelper"
 	Tester "CUGOj-Judger/src/Tester"
 	"fmt"
 	"os"
@@ -14,7 +15,7 @@ args[1] 编译器类型(gnu)
 args[2] 语言版本(
 	gnu:c99,c11,cpp11,cpp14,cpp17,cpp20
 )
-args[3] 执行方式(compile,run,spjrun)
+args[3] 执行方式(compile,run,spjrun,intrun),如果在执行方式中加上后缀d，则表示以debug模式启动
 args[4] 源文件、可执行文件路径，不包含后缀，例如/code/main，不需要/code/main.c
 args[5] 执行时间限制 ms
 args[6] 执行空间限制 MB
@@ -25,6 +26,7 @@ run方式要求有8个参数
 spj run方式要求9个参数
 */
 func main() {
+
 	var args = os.Args
 	if len(args) < 4 {
 		show(Tester.TestInfo{
@@ -33,6 +35,10 @@ func main() {
 		})
 		return
 	} else {
+		if len(args[3]) > 0 && args[3][len(args[3])-1] == 'd' {
+			args[3] = args[3][:len(args[3])-1]
+			debughelper.Debug = true
+		}
 		if args[3] == "compile" {
 			if len(args) < 7 {
 				show(Tester.TestInfo{
